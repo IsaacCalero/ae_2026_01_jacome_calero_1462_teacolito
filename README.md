@@ -38,4 +38,7 @@
   - `entities/*` — entidades JPA sin comportamiento más allá de sus campos.
   - `exceptions/*Exception.kt` — clases de una línea que solo extienden `RuntimeException`.
   - `SecurityConfig.kt` — configuración declarativa de Spring Security (DSL de beans), sin lógica propia; la única lógica real (`CognitoClientIdValidator`) sí tiene test unitario.
-- Se corre con `./gradlew test` dentro de `teacolito/`. La cobertura exacta se mide con el coverage del IDE (IntelliJ *Run with Coverage*), como pide la rúbrica — falta correrlo y adjuntar la captura.
+- Se corre con `./gradlew test` dentro de `teacolito/` (109 tests). Cobertura medida con el coverage del IDE (IntelliJ *Run with Coverage*, sobre `com.pucetec.teacolito`): **97% líneas, 97% métodos, 94% clases, 81% ramas**.
+- **Huecos conocidos y por qué**:
+  - `clients/UserClient` — solo se cubre la rama de fallback (falla la llamada → usa el username crudo). La rama de éxito (`users` responde bien) no se puede probar hasta que el microservicio `users` exista de verdad.
+  - `config/SecurityConfig.jwtDecoder()` — el bean real (que llama a Cognito por red al arrancar) está anotado `@Profile("!test")` a propósito y nunca se instancia en los tests; solo se prueba la lógica propia (`CognitoClientIdValidator`), no la llamada de red en sí.
