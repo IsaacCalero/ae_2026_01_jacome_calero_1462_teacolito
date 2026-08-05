@@ -12,6 +12,18 @@
           "name": "Login User A",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const CryptoJS = require('crypto-js');",
+                  "const message = pm.environment.get('user_a_username') + pm.environment.get('cognito_client_id');",
+                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "pm.environment.set('secret_hash_a', CryptoJS.enc.Base64.stringify(hash));"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -39,7 +51,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{user_a_username}}\",\n    \"PASSWORD\": \"{{user_a_password}}\"\n  }\n}"
+              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{user_a_username}}\",\n    \"PASSWORD\": \"{{user_a_password}}\",\n    \"SECRET_HASH\": \"{{secret_hash_a}}\"\n  }\n}"
             },
             "url": {
               "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
@@ -52,6 +64,18 @@
         {
           "name": "Complete New Password Challenge - User A",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const CryptoJS = require('crypto-js');",
+                  "const message = pm.environment.get('user_a_username') + pm.environment.get('cognito_client_id');",
+                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "pm.environment.set('secret_hash_a', CryptoJS.enc.Base64.stringify(hash));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -73,7 +97,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"Session\": \"{{cognito_session_a}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{user_a_username}}\",\n    \"NEW_PASSWORD\": \"{{user_a_password}}\"\n  }\n}"
+              "raw": "{\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"Session\": \"{{cognito_session_a}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{user_a_username}}\",\n    \"NEW_PASSWORD\": \"{{user_a_password}}\",\n    \"SECRET_HASH\": \"{{secret_hash_a}}\"\n  }\n}"
             },
             "url": {
               "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
@@ -87,6 +111,18 @@
         {
           "name": "Login User B",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const CryptoJS = require('crypto-js');",
+                  "const message = pm.environment.get('user_b_username') + pm.environment.get('cognito_client_id');",
+                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "pm.environment.set('secret_hash_b', CryptoJS.enc.Base64.stringify(hash));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -115,7 +151,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{user_b_username}}\",\n    \"PASSWORD\": \"{{user_b_password}}\"\n  }\n}"
+              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{user_b_username}}\",\n    \"PASSWORD\": \"{{user_b_password}}\",\n    \"SECRET_HASH\": \"{{secret_hash_b}}\"\n  }\n}"
             },
             "url": {
               "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
@@ -128,6 +164,18 @@
         {
           "name": "Complete New Password Challenge - User B",
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const CryptoJS = require('crypto-js');",
+                  "const message = pm.environment.get('user_b_username') + pm.environment.get('cognito_client_id');",
+                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "pm.environment.set('secret_hash_b', CryptoJS.enc.Base64.stringify(hash));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -149,7 +197,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"Session\": \"{{cognito_session_b}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{user_b_username}}\",\n    \"NEW_PASSWORD\": \"{{user_b_password}}\"\n  }\n}"
+              "raw": "{\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"Session\": \"{{cognito_session_b}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{user_b_username}}\",\n    \"NEW_PASSWORD\": \"{{user_b_password}}\",\n    \"SECRET_HASH\": \"{{secret_hash_b}}\"\n  }\n}"
             },
             "url": {
               "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
