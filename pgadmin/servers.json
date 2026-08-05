@@ -1,0 +1,22 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "teacolito-db",
+      "Group": "Servers",
+      "Host": "teacolito-db",
+      "Port": 5432,
+      "MaintenanceDB": "teacolitodb",
+      "Username": "teacolito_app",
+      "SSLMode": "prefer"
+    },
+    "2": {
+      "Name": "users-db",
+      "Group": "Servers",
+      "Host": "users-db",
+      "Port": 5432,
+      "MaintenanceDB": "usersdb",
+      "Username": "users_app",
+      "SSLMode": "prefer"
+    }
+  }
+}

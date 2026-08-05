@@ -1,28 +1,102 @@
 services:
-  postgres:
-    image: postgres:16
+  nginx:
+    image: nginx:alpine
+    depends_on:
+      users:
+        condition: service_started
+      teacolito:
+        condition: service_started
+    ports:
+      - "9090:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/proxy_headers.conf:/etc/nginx/proxy_headers.conf:ro
+
+  users-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: usersdb
+      POSTGRES_USER: users_app
+      POSTGRES_PASSWORD: users_app
+    expose:
+      - "5432"
+    volumes:
+      - users_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U users_app -d usersdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  teacolito-db:
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: teacolitodb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
+      POSTGRES_USER: teacolito_app
+      POSTGRES_PASSWORD: teacolito_app
+    expose:
+      - "5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - teacolito_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teacolito_app -d teacolitodb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  app:
+  users:
     build:
-      context: .
+      context: ./users
       dockerfile: Dockerfile
     depends_on:
-      - postgres
-    ports:
-      - "8080:8080"
+      users-db:
+        condition: service_healthy
+    expose:
+      - "8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/teacolitodb
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: postgres
-      COGNITO_ISSUER_URI: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_mNoOf1LKH
+      SPRING_DATASOURCE_URL: jdbc:postgresql://users-db:5432/usersdb
+      SPRING_DATASOURCE_USERNAME: users_app
+      SPRING_DATASOURCE_PASSWORD: users_app
+      COGNITO_REGION: ${COGNITO_REGION}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_ISSUER_URI: ${COGNITO_ISSUER_URI}
+
+  teacolito:
+    build:
+      context: ./teacolito
+      dockerfile: Dockerfile
+    depends_on:
+      teacolito-db:
+        condition: service_healthy
+      users:
+        condition: service_started
+    expose:
+      - "8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://teacolito-db:5432/teacolitodb
+      SPRING_DATASOURCE_USERNAME: teacolito_app
+      SPRING_DATASOURCE_PASSWORD: teacolito_app
+      COGNITO_REGION: ${COGNITO_REGION}
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
+      COGNITO_ISSUER_URI: ${COGNITO_ISSUER_URI}
+      USERS_SERVICE_URL: http://users:8081
+
+  pgadmin:
+    image: dpage/pgadmin4
+    depends_on:
+      - users-db
+      - teacolito-db
+    expose:
+      - "80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@teacolito.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
 
 volumes:
-  postgres_data:
+  users_data:
+  teacolito_data:
+  pgadmin_data:
