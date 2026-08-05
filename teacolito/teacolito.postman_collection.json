@@ -18,8 +18,15 @@
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
                   "var json = pm.response.json();",
-                  "pm.test('AccessToken present', function () { pm.expect(json.AuthenticationResult).to.have.property('AccessToken'); });",
-                  "pm.environment.set('access_token_a', json.AuthenticationResult.AccessToken);"
+                  "if (json.AuthenticationResult) {",
+                  "    pm.environment.set('access_token_a', json.AuthenticationResult.AccessToken);",
+                  "    pm.test('AccessToken saved', function () { pm.expect(json.AuthenticationResult.AccessToken).to.be.a('string'); });",
+                  "} else if (json.ChallengeName === 'NEW_PASSWORD_REQUIRED') {",
+                  "    pm.environment.set('cognito_session_a', json.Session);",
+                  "    console.warn('User A needs a permanent password: run \"Complete New Password Challenge - User A\" once, then re-run this login.');",
+                  "} else {",
+                  "    throw new Error('Unexpected Cognito response: ' + pm.response.text());",
+                  "}"
                 ]
               }
             }
@@ -43,6 +50,41 @@
           }
         },
         {
+          "name": "Complete New Password Challenge - User A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('AuthenticationResult present', function () { pm.expect(json.AuthenticationResult).to.have.property('AccessToken'); });",
+                  "pm.environment.set('access_token_a', json.AuthenticationResult.AccessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+              { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.RespondToAuthChallenge" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"Session\": \"{{cognito_session_a}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{user_a_username}}\",\n    \"NEW_PASSWORD\": \"{{user_a_password}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
+              "protocol": "https",
+              "host": ["cognito-idp", "{{cognito_region}}", "amazonaws", "com"],
+              "path": [""]
+            },
+            "description": "Correr UNA SOLA VEZ por usuario, solo si 'Login User A' capturo un ChallengeName NEW_PASSWORD_REQUIRED en vez de un token. Deja la password ya usada como permanente; los logins siguientes no necesitan este paso."
+          }
+        },
+        {
           "name": "Login User B",
           "event": [
             {
@@ -52,8 +94,15 @@
                 "exec": [
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
                   "var json = pm.response.json();",
-                  "pm.test('AccessToken present', function () { pm.expect(json.AuthenticationResult).to.have.property('AccessToken'); });",
-                  "pm.environment.set('access_token_b', json.AuthenticationResult.AccessToken);"
+                  "if (json.AuthenticationResult) {",
+                  "    pm.environment.set('access_token_b', json.AuthenticationResult.AccessToken);",
+                  "    pm.test('AccessToken saved', function () { pm.expect(json.AuthenticationResult.AccessToken).to.be.a('string'); });",
+                  "} else if (json.ChallengeName === 'NEW_PASSWORD_REQUIRED') {",
+                  "    pm.environment.set('cognito_session_b', json.Session);",
+                  "    console.warn('User B needs a permanent password: run \"Complete New Password Challenge - User B\" once, then re-run this login.');",
+                  "} else {",
+                  "    throw new Error('Unexpected Cognito response: ' + pm.response.text());",
+                  "}"
                 ]
               }
             }
@@ -74,6 +123,41 @@
               "host": ["cognito-idp", "{{cognito_region}}", "amazonaws", "com"],
               "path": [""]
             }
+          }
+        },
+        {
+          "name": "Complete New Password Challenge - User B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('AuthenticationResult present', function () { pm.expect(json.AuthenticationResult).to.have.property('AccessToken'); });",
+                  "pm.environment.set('access_token_b', json.AuthenticationResult.AccessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+              { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.RespondToAuthChallenge" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ChallengeName\": \"NEW_PASSWORD_REQUIRED\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"Session\": \"{{cognito_session_b}}\",\n  \"ChallengeResponses\": {\n    \"USERNAME\": \"{{user_b_username}}\",\n    \"NEW_PASSWORD\": \"{{user_b_password}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
+              "protocol": "https",
+              "host": ["cognito-idp", "{{cognito_region}}", "amazonaws", "com"],
+              "path": [""]
+            },
+            "description": "Correr UNA SOLA VEZ por usuario, solo si 'Login User B' capturo un ChallengeName NEW_PASSWORD_REQUIRED en vez de un token. Deja la password ya usada como permanente; los logins siguientes no necesitan este paso."
           }
         }
       ]
