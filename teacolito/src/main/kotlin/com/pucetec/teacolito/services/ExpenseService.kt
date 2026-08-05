@@ -1,5 +1,6 @@
 package com.pucetec.teacolito.services
 
+import com.pucetec.teacolito.clients.UserClient
 import com.pucetec.teacolito.dto.ExpenseRequest
 import com.pucetec.teacolito.dto.ExpenseResponse
 import com.pucetec.teacolito.entities.Expense
@@ -26,17 +27,20 @@ class ExpenseService(
     private val expenseRepository: ExpenseRepository,
     private val expenseShareRepository: ExpenseShareRepository,
     private val expenseGroupRepository: ExpenseGroupRepository,
-    private val groupMemberRepository: GroupMemberRepository
+    private val groupMemberRepository: GroupMemberRepository,
+    private val userClient: UserClient
 ) {
 
     private val log = LoggerFactory.getLogger(ExpenseService::class.java)
 
-    fun createExpense(request: ExpenseRequest, currentUsername: String): ExpenseResponse {
+    fun createExpense(request: ExpenseRequest, currentUsername: String, token: String = ""): ExpenseResponse {
         val group = expenseGroupRepository.findById(request.groupId)
             .orElseThrow { ExpenseGroupNotFoundException("No group exists with id ${request.groupId}") }
 
         if (!groupMemberRepository.existsByGroupIdAndMemberUsername(group.id, currentUsername)) {
-            throw NotGroupMemberException("User $currentUsername does not belong to group ${group.id}")
+            throw NotGroupMemberException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} does not belong to group ${group.id}"
+            )
         }
 
         if (group.closed) {
@@ -75,12 +79,14 @@ class ExpenseService(
         return expense.toResponse(shares)
     }
 
-    fun getExpensesByGroup(groupId: Long, currentUsername: String): List<ExpenseResponse> {
+    fun getExpensesByGroup(groupId: Long, currentUsername: String, token: String = ""): List<ExpenseResponse> {
         expenseGroupRepository.findById(groupId)
             .orElseThrow { ExpenseGroupNotFoundException("No group exists with id $groupId") }
 
         if (!groupMemberRepository.existsByGroupIdAndMemberUsername(groupId, currentUsername)) {
-            throw NotGroupMemberException("User $currentUsername does not belong to group $groupId")
+            throw NotGroupMemberException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} does not belong to group $groupId"
+            )
         }
 
         return expenseRepository.findByGroupId(groupId).map { expense ->
@@ -88,12 +94,14 @@ class ExpenseService(
         }
     }
 
-    fun updateExpense(id: Long, request: ExpenseRequest, currentUsername: String): ExpenseResponse {
+    fun updateExpense(id: Long, request: ExpenseRequest, currentUsername: String, token: String = ""): ExpenseResponse {
         val expense = expenseRepository.findById(id)
             .orElseThrow { ExpenseNotFoundException("No expense exists with id $id") }
 
         if (expense.payerUsername != currentUsername) {
-            throw NotExpenseOwnerException("User $currentUsername is not the owner of expense $id")
+            throw NotExpenseOwnerException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} is not the owner of expense $id"
+            )
         }
 
         if (request.amount <= BigDecimal.ZERO) {
@@ -125,12 +133,14 @@ class ExpenseService(
         return updatedExpense.toResponse(shares)
     }
 
-    fun deleteExpense(id: Long, currentUsername: String) {
+    fun deleteExpense(id: Long, currentUsername: String, token: String = "") {
         val expense = expenseRepository.findById(id)
             .orElseThrow { ExpenseNotFoundException("No expense exists with id $id") }
 
         if (expense.payerUsername != currentUsername) {
-            throw NotExpenseOwnerException("User $currentUsername is not the owner of expense $id")
+            throw NotExpenseOwnerException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} is not the owner of expense $id"
+            )
         }
 
         expenseShareRepository.findByExpenseId(id).forEach { expenseShareRepository.delete(it) }

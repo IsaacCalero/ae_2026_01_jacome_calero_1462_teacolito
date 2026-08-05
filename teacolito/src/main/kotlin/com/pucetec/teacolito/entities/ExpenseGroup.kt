@@ -6,14 +6,12 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
-import jakarta.persistence.UniqueConstraint
 import java.time.LocalDateTime
 
 @Entity
-@Table(
-    name = "expense_groups",
-    uniqueConstraints = [UniqueConstraint(name = "uq_expense_groups_name_created_by", columnNames = ["name", "created_by"])]
-)
+@Table(name = "expense_groups")
+// Uniqueness of (name, created_by) is enforced case-insensitively at the DB level via a
+// functional index (see V4__case_insensitive_group_name.sql), not via a plain @UniqueConstraint.
 class ExpenseGroup(
 
     @Id

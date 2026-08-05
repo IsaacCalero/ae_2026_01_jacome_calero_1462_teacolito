@@ -1,5 +1,6 @@
 package com.pucetec.teacolito.services
 
+import com.pucetec.teacolito.clients.UserClient
 import com.pucetec.teacolito.dto.ExpenseRequest
 import com.pucetec.teacolito.dto.ExpenseShareRequest
 import com.pucetec.teacolito.entities.Expense
@@ -17,11 +18,13 @@ import com.pucetec.teacolito.repositories.ExpenseRepository
 import com.pucetec.teacolito.repositories.ExpenseShareRepository
 import com.pucetec.teacolito.repositories.GroupMemberRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
+import org.mockito.Mockito.lenient
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.verify
@@ -45,8 +48,16 @@ class ExpenseServiceTest {
     @Mock
     lateinit var groupMemberRepository: GroupMemberRepository
 
+    @Mock
+    lateinit var userClient: UserClient
+
     @InjectMocks
     lateinit var service: ExpenseService
+
+    @BeforeEach
+    fun setUp() {
+        lenient().whenever(userClient.resolveDisplayName(any(), any())).thenAnswer { it.arguments[0] }
+    }
 
     private fun buildGroup(closed: Boolean = false): ExpenseGroup {
         val group = ExpenseGroup(

@@ -28,7 +28,7 @@ class SettlementController(
         @RequestBody request: SettlementRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<SettlementResponse> {
-        val response = settlementService.createSettlement(request, jwt.extractUsername())
+        val response = settlementService.createSettlement(request, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.status(HttpStatus.CREATED).body(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -37,7 +37,7 @@ class SettlementController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<List<SettlementResponse>> {
-        val response = settlementService.getSettlementsByGroup(id, jwt.extractUsername())
+        val response = settlementService.getSettlementsByGroup(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrichSettlements(userClient, jwt.tokenValue))
     }
 
@@ -46,7 +46,7 @@ class SettlementController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<Void> {
-        settlementService.deleteSettlement(id, jwt.extractUsername())
+        settlementService.deleteSettlement(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.noContent().build()
     }
 }

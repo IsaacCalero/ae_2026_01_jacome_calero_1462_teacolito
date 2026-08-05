@@ -12,11 +12,10 @@ import java.time.LocalDateTime
 @Entity
 @Table(
     name = "user_profiles",
-    uniqueConstraints = [
-        UniqueConstraint(name = "uq_user_profiles_sub", columnNames = ["sub"]),
-        UniqueConstraint(name = "uq_user_profiles_display_name", columnNames = ["display_name"])
-    ]
+    uniqueConstraints = [UniqueConstraint(name = "uq_user_profiles_sub", columnNames = ["sub"])]
 )
+// Uniqueness of display_name is enforced case-insensitively at the DB level via a functional
+// index (see V2__case_insensitive_display_name.sql), not via a plain @UniqueConstraint.
 class UserProfile(
 
     @Id

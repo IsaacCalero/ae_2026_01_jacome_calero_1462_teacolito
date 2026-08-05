@@ -37,7 +37,7 @@ class ExpenseGroupController(
         @RequestBody request: ExpenseGroupRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<ExpenseGroupResponse> {
-        val response = expenseGroupService.createGroup(request, jwt.extractUsername())
+        val response = expenseGroupService.createGroup(request, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.status(HttpStatus.CREATED).body(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -46,7 +46,7 @@ class ExpenseGroupController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<ExpenseGroupResponse> {
-        val response = expenseGroupService.getGroup(id, jwt.extractUsername())
+        val response = expenseGroupService.getGroup(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -56,7 +56,7 @@ class ExpenseGroupController(
         @RequestBody request: ExpenseGroupRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<ExpenseGroupResponse> {
-        val response = expenseGroupService.updateGroup(id, request, jwt.extractUsername())
+        val response = expenseGroupService.updateGroup(id, request, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -65,7 +65,7 @@ class ExpenseGroupController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<Void> {
-        expenseGroupService.deleteGroup(id, jwt.extractUsername())
+        expenseGroupService.deleteGroup(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.noContent().build()
     }
 
@@ -74,7 +74,7 @@ class ExpenseGroupController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<ExpenseGroupResponse> {
-        val response = expenseGroupService.closeGroup(id, jwt.extractUsername())
+        val response = expenseGroupService.closeGroup(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -83,7 +83,7 @@ class ExpenseGroupController(
         @RequestBody request: JoinGroupRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<GroupMemberResponse> {
-        val response = expenseGroupService.joinGroup(request, jwt.extractUsername())
+        val response = expenseGroupService.joinGroup(request, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.status(HttpStatus.CREATED).body(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -92,7 +92,7 @@ class ExpenseGroupController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<List<GroupMemberResponse>> {
-        val response = expenseGroupService.getMembers(id, jwt.extractUsername())
+        val response = expenseGroupService.getMembers(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrichMembers(userClient, jwt.tokenValue))
     }
 
@@ -101,7 +101,7 @@ class ExpenseGroupController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<List<BalanceResponse>> {
-        val response = expenseGroupService.getBalances(id, jwt.extractUsername())
+        val response = expenseGroupService.getBalances(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrichBalances(userClient, jwt.tokenValue))
     }
 
@@ -110,7 +110,7 @@ class ExpenseGroupController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<List<TransferResponse>> {
-        val response = expenseGroupService.getNetting(id, jwt.extractUsername())
+        val response = expenseGroupService.getNetting(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrichTransfers(userClient, jwt.tokenValue))
     }
 

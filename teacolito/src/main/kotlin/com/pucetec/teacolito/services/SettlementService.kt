@@ -1,5 +1,6 @@
 package com.pucetec.teacolito.services
 
+import com.pucetec.teacolito.clients.UserClient
 import com.pucetec.teacolito.dto.SettlementRequest
 import com.pucetec.teacolito.dto.SettlementResponse
 import com.pucetec.teacolito.entities.Settlement
@@ -21,17 +22,20 @@ import java.time.LocalDateTime
 class SettlementService(
     private val settlementRepository: SettlementRepository,
     private val expenseGroupRepository: ExpenseGroupRepository,
-    private val groupMemberRepository: GroupMemberRepository
+    private val groupMemberRepository: GroupMemberRepository,
+    private val userClient: UserClient
 ) {
 
     private val log = LoggerFactory.getLogger(SettlementService::class.java)
 
-    fun createSettlement(request: SettlementRequest, currentUsername: String): SettlementResponse {
+    fun createSettlement(request: SettlementRequest, currentUsername: String, token: String = ""): SettlementResponse {
         val group = expenseGroupRepository.findById(request.groupId)
             .orElseThrow { ExpenseGroupNotFoundException("No group exists with id ${request.groupId}") }
 
         if (!groupMemberRepository.existsByGroupIdAndMemberUsername(group.id, currentUsername)) {
-            throw NotGroupMemberException("User $currentUsername does not belong to group ${group.id}")
+            throw NotGroupMemberException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} does not belong to group ${group.id}"
+            )
         }
 
         if (request.amount <= BigDecimal.ZERO) {
@@ -52,23 +56,27 @@ class SettlementService(
         return response
     }
 
-    fun getSettlementsByGroup(groupId: Long, currentUsername: String): List<SettlementResponse> {
+    fun getSettlementsByGroup(groupId: Long, currentUsername: String, token: String = ""): List<SettlementResponse> {
         expenseGroupRepository.findById(groupId)
             .orElseThrow { ExpenseGroupNotFoundException("No group exists with id $groupId") }
 
         if (!groupMemberRepository.existsByGroupIdAndMemberUsername(groupId, currentUsername)) {
-            throw NotGroupMemberException("User $currentUsername does not belong to group $groupId")
+            throw NotGroupMemberException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} does not belong to group $groupId"
+            )
         }
 
         return settlementRepository.findByGroupId(groupId).map { it.toResponse() }
     }
 
-    fun deleteSettlement(id: Long, currentUsername: String) {
+    fun deleteSettlement(id: Long, currentUsername: String, token: String = "") {
         val settlement = settlementRepository.findById(id)
             .orElseThrow { SettlementNotFoundException("No settlement exists with id $id") }
 
         if (settlement.fromUsername != currentUsername) {
-            throw NotSettlementOwnerException("User $currentUsername is not the owner of settlement $id")
+            throw NotSettlementOwnerException(
+                "User ${userClient.resolveDisplayName(currentUsername, token)} is not the owner of settlement $id"
+            )
         }
 
         settlementRepository.delete(settlement)

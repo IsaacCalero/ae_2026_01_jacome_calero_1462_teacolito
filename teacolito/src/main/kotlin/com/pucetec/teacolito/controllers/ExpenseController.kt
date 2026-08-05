@@ -29,7 +29,7 @@ class ExpenseController(
         @RequestBody request: ExpenseRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<ExpenseResponse> {
-        val response = expenseService.createExpense(request, jwt.extractUsername())
+        val response = expenseService.createExpense(request, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.status(HttpStatus.CREATED).body(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -38,7 +38,7 @@ class ExpenseController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<List<ExpenseResponse>> {
-        val response = expenseService.getExpensesByGroup(id, jwt.extractUsername())
+        val response = expenseService.getExpensesByGroup(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrichExpenses(userClient, jwt.tokenValue))
     }
 
@@ -48,7 +48,7 @@ class ExpenseController(
         @RequestBody request: ExpenseRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<ExpenseResponse> {
-        val response = expenseService.updateExpense(id, request, jwt.extractUsername())
+        val response = expenseService.updateExpense(id, request, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.ok(response.enrich(userClient, jwt.tokenValue))
     }
 
@@ -57,7 +57,7 @@ class ExpenseController(
         @PathVariable id: Long,
         @AuthenticationPrincipal jwt: Jwt
     ): ResponseEntity<Void> {
-        expenseService.deleteExpense(id, jwt.extractUsername())
+        expenseService.deleteExpense(id, jwt.extractUsername(), jwt.tokenValue)
         return ResponseEntity.noContent().build()
     }
 }
