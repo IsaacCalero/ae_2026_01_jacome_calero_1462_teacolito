@@ -23,6 +23,7 @@ import com.pucetec.teacolito.repositories.ExpenseRepository
 import com.pucetec.teacolito.repositories.ExpenseShareRepository
 import com.pucetec.teacolito.repositories.GroupMemberRepository
 import com.pucetec.teacolito.repositories.SettlementRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -37,12 +38,16 @@ class ExpenseGroupService(
     private val settlementRepository: SettlementRepository
 ) {
 
+    private val log = LoggerFactory.getLogger(ExpenseGroupService::class.java)
+
     fun createGroup(request: ExpenseGroupRequest, currentUsername: String): ExpenseGroupResponse {
         if (request.name.isBlank()) {
+            log.warn("event=group.create.rejected | msg=Blank group name")
             throw BlankFieldException("Group name cannot be blank")
         }
 
         if (expenseGroupRepository.existsByNameAndCreatedBy(request.name, currentUsername)) {
+            log.warn("event=group.create.rejected | msg=Duplicate group name | name=\"${request.name}\"")
             throw DuplicateGroupNameException("User $currentUsername already has a group named '${request.name}'")
         }
 
@@ -64,6 +69,7 @@ class ExpenseGroupService(
             )
         )
 
+        log.info("event=group.created | msg=Group created | groupId=${group.id} name=\"${group.name}\"")
         return group.toResponse()
     }
 
@@ -78,15 +84,20 @@ class ExpenseGroupService(
         requireCreator(group, currentUsername)
 
         if (request.name.isBlank()) {
+            log.warn("event=group.update.rejected | msg=Blank group name | groupId=$groupId")
             throw BlankFieldException("Group name cannot be blank")
         }
 
         if (expenseGroupRepository.existsByNameAndCreatedByAndIdNot(request.name, currentUsername, groupId)) {
+            log.warn("event=group.update.rejected | msg=Duplicate group name | groupId=$groupId name=\"${request.name}\"")
             throw DuplicateGroupNameException("User $currentUsername already has a group named '${request.name}'")
         }
 
+        val oldName = group.name
         group.name = request.name
-        return expenseGroupRepository.save(group).toResponse()
+        val response = expenseGroupRepository.save(group).toResponse()
+        log.info("event=group.updated | msg=Group updated | groupId=$groupId oldName=\"$oldName\" newName=\"${request.name}\"")
+        return response
     }
 
     fun deleteGroup(groupId: Long, currentUsername: String) {
@@ -95,10 +106,12 @@ class ExpenseGroupService(
 
         val hasOutstandingBalance = computeBalances(groupId).any { it.netAmount.compareTo(BigDecimal.ZERO) != 0 }
         if (hasOutstandingBalance) {
+            log.warn("event=group.delete.rejected | msg=Outstanding balance | groupId=$groupId")
             throw OutstandingBalanceException("Group $groupId cannot be deleted while members have outstanding balances")
         }
 
         expenseGroupRepository.delete(group)
+        log.info("event=group.deleted | msg=Group deleted | groupId=$groupId")
     }
 
     fun joinGroup(request: JoinGroupRequest, currentUsername: String): GroupMemberResponse {
@@ -106,6 +119,7 @@ class ExpenseGroupService(
             ?: throw InvitationNotFoundException("No invitation exists with code ${request.code}")
 
         if (groupMemberRepository.existsByGroupIdAndMemberUsername(group.id, currentUsername)) {
+            log.warn("event=member.join.rejected | msg=Already a member | groupId=${group.id} member=$currentUsername")
             throw MemberAlreadyExistsException("User $currentUsername is already a member of group ${group.id}")
         }
 
@@ -117,6 +131,7 @@ class ExpenseGroupService(
             )
         )
 
+        log.info("event=member.joined | msg=Member joined group | groupId=${group.id} member=$currentUsername")
         return member.toResponse()
     }
 
@@ -130,7 +145,9 @@ class ExpenseGroupService(
         val group = findGroupOrThrow(groupId)
         requireCreator(group, currentUsername)
         group.closed = true
-        return expenseGroupRepository.save(group).toResponse()
+        val response = expenseGroupRepository.save(group).toResponse()
+        log.info("event=group.closed | msg=Group closed | groupId=$groupId")
+        return response
     }
 
     fun getBalances(groupId: Long, currentUsername: String): List<BalanceResponse> {

@@ -16,6 +16,7 @@ import com.pucetec.teacolito.repositories.ExpenseGroupRepository
 import com.pucetec.teacolito.repositories.ExpenseRepository
 import com.pucetec.teacolito.repositories.ExpenseShareRepository
 import com.pucetec.teacolito.repositories.GroupMemberRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -28,6 +29,8 @@ class ExpenseService(
     private val groupMemberRepository: GroupMemberRepository
 ) {
 
+    private val log = LoggerFactory.getLogger(ExpenseService::class.java)
+
     fun createExpense(request: ExpenseRequest, currentUsername: String): ExpenseResponse {
         val group = expenseGroupRepository.findById(request.groupId)
             .orElseThrow { ExpenseGroupNotFoundException("No group exists with id ${request.groupId}") }
@@ -37,10 +40,12 @@ class ExpenseService(
         }
 
         if (group.closed) {
+            log.warn("event=expense.create.rejected | msg=Group is closed | groupId=${group.id}")
             throw GroupClosedException("Group ${group.id} is closed")
         }
 
         if (request.amount <= BigDecimal.ZERO) {
+            log.warn("event=expense.create.rejected | msg=Invalid amount | groupId=${group.id} amount=${request.amount}")
             throw InvalidAmountException("Expense amount must be greater than zero")
         }
 
@@ -66,6 +71,7 @@ class ExpenseService(
             )
         }
 
+        log.info("event=expense.created | msg=Expense created | expenseId=${expense.id} groupId=${group.id} amount=${expense.amount}")
         return expense.toResponse(shares)
     }
 
@@ -91,11 +97,13 @@ class ExpenseService(
         }
 
         if (request.amount <= BigDecimal.ZERO) {
+            log.warn("event=expense.update.rejected | msg=Invalid amount | expenseId=$id amount=${request.amount}")
             throw InvalidAmountException("Expense amount must be greater than zero")
         }
 
         validateShares(request)
 
+        val oldAmount = expense.amount
         expense.description = request.description
         expense.amount = request.amount
 
@@ -113,6 +121,7 @@ class ExpenseService(
             )
         }
 
+        log.info("event=expense.updated | msg=Expense updated | expenseId=$id oldAmount=$oldAmount newAmount=${request.amount}")
         return updatedExpense.toResponse(shares)
     }
 
@@ -126,11 +135,13 @@ class ExpenseService(
 
         expenseShareRepository.findByExpenseId(id).forEach { expenseShareRepository.delete(it) }
         expenseRepository.delete(expense)
+        log.info("event=expense.deleted | msg=Expense deleted | expenseId=$id")
     }
 
     private fun validateShares(request: ExpenseRequest) {
         val sharesSum = request.shares.fold(BigDecimal.ZERO) { acc, share -> acc + share.shareAmount }
         if (sharesSum.compareTo(request.amount) != 0) {
+            log.warn("event=expense.share_mismatch | msg=Shares do not match amount | sharesSum=$sharesSum amount=${request.amount}")
             throw ShareMismatchException(
                 "The sum of the shares ($sharesSum) does not match the amount (${request.amount})"
             )

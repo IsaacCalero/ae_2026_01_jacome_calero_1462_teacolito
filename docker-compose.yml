@@ -14,6 +14,20 @@ services:
 
   users-db:
     image: postgres:16-alpine
+    command:
+      - postgres
+      - -c
+      - log_statement=all
+      - -c
+      - log_duration=on
+      - -c
+      - log_min_duration_statement=0
+      - -c
+      - log_line_prefix=%m [%p] %u@%d app=%a
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
     environment:
       POSTGRES_DB: usersdb
       POSTGRES_USER: users_app
@@ -30,6 +44,20 @@ services:
 
   teacolito-db:
     image: postgres:16-alpine
+    command:
+      - postgres
+      - -c
+      - log_statement=all
+      - -c
+      - log_duration=on
+      - -c
+      - log_min_duration_statement=0
+      - -c
+      - log_line_prefix=%m [%p] %u@%d app=%a
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
     environment:
       POSTGRES_DB: teacolitodb
       POSTGRES_USER: teacolito_app

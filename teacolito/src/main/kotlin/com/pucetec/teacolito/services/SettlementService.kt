@@ -12,6 +12,7 @@ import com.pucetec.teacolito.mappers.toResponse
 import com.pucetec.teacolito.repositories.ExpenseGroupRepository
 import com.pucetec.teacolito.repositories.GroupMemberRepository
 import com.pucetec.teacolito.repositories.SettlementRepository
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -23,6 +24,8 @@ class SettlementService(
     private val groupMemberRepository: GroupMemberRepository
 ) {
 
+    private val log = LoggerFactory.getLogger(SettlementService::class.java)
+
     fun createSettlement(request: SettlementRequest, currentUsername: String): SettlementResponse {
         val group = expenseGroupRepository.findById(request.groupId)
             .orElseThrow { ExpenseGroupNotFoundException("No group exists with id ${request.groupId}") }
@@ -32,6 +35,7 @@ class SettlementService(
         }
 
         if (request.amount <= BigDecimal.ZERO) {
+            log.warn("event=settlement.create.rejected | msg=Invalid amount | groupId=${group.id} amount=${request.amount}")
             throw InvalidAmountException("Settlement amount must be greater than zero")
         }
 
@@ -43,7 +47,9 @@ class SettlementService(
             settledAt = LocalDateTime.now()
         )
 
-        return settlementRepository.save(settlement).toResponse()
+        val response = settlementRepository.save(settlement).toResponse()
+        log.info("event=settlement.created | msg=Settlement created | settlementId=${response.id} groupId=${group.id} from=$currentUsername to=${request.toUsername} amount=${request.amount}")
+        return response
     }
 
     fun getSettlementsByGroup(groupId: Long, currentUsername: String): List<SettlementResponse> {
@@ -66,5 +72,6 @@ class SettlementService(
         }
 
         settlementRepository.delete(settlement)
+        log.info("event=settlement.deleted | msg=Settlement deleted | settlementId=$id")
     }
 }
