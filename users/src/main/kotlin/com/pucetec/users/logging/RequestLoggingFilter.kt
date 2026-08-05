@@ -13,7 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 import java.util.Base64
 
 private const val MDC_SUB_KEY = "sub"
-private const val ANONYMOUS = "anonimo"
+private const val ANONYMOUS = "anonymous"
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
