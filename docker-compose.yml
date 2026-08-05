@@ -89,7 +89,7 @@ services:
     expose:
       - "80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@teacolito.local
+      PGADMIN_DEFAULT_EMAIL: admin@teacolito.com
       PGADMIN_DEFAULT_PASSWORD: admin
       PGADMIN_CONFIG_SERVER_MODE: "False"
     volumes:
