@@ -1,0 +1,509 @@
+{
+  "info": {
+    "name": "Teacolito API",
+    "description": "Coleccion end-to-end del backend Teacolito, a traves del API Gateway (nginx). Corre las carpetas en orden de arriba hacia abajo con el Collection Runner. Requiere dos usuarios de prueba reales de Cognito configurados en el environment (user_a_username/password, user_b_username/password) con ALLOW_USER_PASSWORD_AUTH habilitado en el App Client.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login User A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('AccessToken present', function () { pm.expect(json.AuthenticationResult).to.have.property('AccessToken'); });",
+                  "pm.environment.set('access_token_a', json.AuthenticationResult.AccessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+              { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.InitiateAuth" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{user_a_username}}\",\n    \"PASSWORD\": \"{{user_a_password}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
+              "protocol": "https",
+              "host": ["cognito-idp", "{{cognito_region}}", "amazonaws", "com"],
+              "path": [""]
+            }
+          }
+        },
+        {
+          "name": "Login User B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('AccessToken present', function () { pm.expect(json.AuthenticationResult).to.have.property('AccessToken'); });",
+                  "pm.environment.set('access_token_b', json.AuthenticationResult.AccessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-amz-json-1.1" },
+              { "key": "X-Amz-Target", "value": "AWSCognitoIdentityProviderService.InitiateAuth" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"AuthFlow\": \"USER_PASSWORD_AUTH\",\n  \"ClientId\": \"{{cognito_client_id}}\",\n  \"AuthParameters\": {\n    \"USERNAME\": \"{{user_b_username}}\",\n    \"PASSWORD\": \"{{user_b_password}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "https://cognito-idp.{{cognito_region}}.amazonaws.com/",
+              "protocol": "https",
+              "host": ["cognito-idp", "{{cognito_region}}", "amazonaws", "com"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Expense Groups",
+      "item": [
+        {
+          "name": "Create group - without token (401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 401', function () { pm.response.to.have.status(401); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Should not be created\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups"] }
+          }
+        },
+        {
+          "name": "Create group - blank name (400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 400', function () { pm.response.to.have.status(400); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"   \"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups"] }
+          }
+        },
+        {
+          "name": "Create group",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('group_id', json.id);",
+                  "pm.environment.set('invite_code', json.inviteCode);",
+                  "pm.test('Has inviteCode', function () { pm.expect(json.inviteCode).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman trip\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups"] }
+          }
+        },
+        {
+          "name": "Create group - duplicate name (409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 409', function () { pm.response.to.have.status(409); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman trip\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups"] }
+          }
+        },
+        {
+          "name": "Get group by id",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Name matches', function () { pm.expect(pm.response.json().name).to.eql('Postman trip'); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        },
+        {
+          "name": "Get group - not found (404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 404', function () { pm.response.to.have.status(404); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/999999999", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "999999999"] }
+          }
+        },
+        {
+          "name": "Get group - non-member (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 403', function () { pm.response.to.have.status(403); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_b}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        },
+        {
+          "name": "Get invitation - without token (401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 401', function () { pm.response.to.have.status(401); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/teacolito/invitations/{{invite_code}}", "host": ["{{base_url}}"], "path": ["teacolito", "invitations", "{{invite_code}}"] }
+          }
+        },
+        {
+          "name": "Get invitation - with token",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Group name visible', function () { pm.expect(pm.response.json().groupName).to.eql('Postman trip'); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_b}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/invitations/{{invite_code}}", "host": ["{{base_url}}"], "path": ["teacolito", "invitations", "{{invite_code}}"] }
+          }
+        },
+        {
+          "name": "Join group - unknown code (404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 404', function () { pm.response.to.have.status(404); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"DOES-NOT-EXIST\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/groups/join", "host": ["{{base_url}}"], "path": ["teacolito", "groups", "join"] }
+          }
+        },
+        {
+          "name": "Join group by code",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 201', function () { pm.response.to.have.status(201); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"{{invite_code}}\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/groups/join", "host": ["{{base_url}}"], "path": ["teacolito", "groups", "join"] }
+          }
+        },
+        {
+          "name": "Join group - already member (409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 409', function () { pm.response.to.have.status(409); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"{{invite_code}}\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/groups/join", "host": ["{{base_url}}"], "path": ["teacolito", "groups", "join"] }
+          }
+        },
+        {
+          "name": "Get members",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Two members', function () { pm.expect(pm.response.json().length).to.eql(2); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}/members", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}", "members"] }
+          }
+        },
+        {
+          "name": "Update group",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Name updated', function () { pm.expect(pm.response.json().name).to.eql('Postman trip (updated)'); });"] } }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman trip (updated)\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        },
+        {
+          "name": "Update group - not creator (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 403', function () { pm.response.to.have.status(403); });"] } }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Hijacked name\"\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "Create expense - without token (401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 401', function () { pm.response.to.have.status(401); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"description\": \"No token\",\n  \"amount\": 10.00,\n  \"shares\": []\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expenses", "host": ["{{base_url}}"], "path": ["teacolito", "expenses"] }
+          }
+        },
+        {
+          "name": "Create expense - shares mismatch (400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 400', function () { pm.response.to.have.status(400); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"description\": \"Gasolina\",\n  \"amount\": 60.00,\n  \"shares\": [\n    { \"debtorUsername\": \"user-a\", \"shareAmount\": 20.00 }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expenses", "host": ["{{base_url}}"], "path": ["teacolito", "expenses"] }
+          }
+        },
+        {
+          "name": "Create expense - invalid amount (400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 400', function () { pm.response.to.have.status(400); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"description\": \"Nada\",\n  \"amount\": 0,\n  \"shares\": []\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expenses", "host": ["{{base_url}}"], "path": ["teacolito", "expenses"] }
+          }
+        },
+        {
+          "name": "Create expense",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('expense_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"description\": \"Gasolina\",\n  \"amount\": 60.00,\n  \"shares\": [\n    { \"debtorUsername\": \"{{user_a_username}}\", \"shareAmount\": 30.00 },\n    { \"debtorUsername\": \"{{user_b_username}}\", \"shareAmount\": 30.00 }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expenses", "host": ["{{base_url}}"], "path": ["teacolito", "expenses"] }
+          }
+        },
+        {
+          "name": "Get expenses by group",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('At least one expense', function () { pm.expect(pm.response.json().length).to.be.above(0); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}/expenses", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}", "expenses"] }
+          }
+        },
+        {
+          "name": "Update expense",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });"] } }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"description\": \"Gasolina ida y vuelta\",\n  \"amount\": 60.00,\n  \"shares\": [\n    { \"debtorUsername\": \"{{user_a_username}}\", \"shareAmount\": 30.00 },\n    { \"debtorUsername\": \"{{user_b_username}}\", \"shareAmount\": 30.00 }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expenses/{{expense_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expenses", "{{expense_id}}"] }
+          }
+        },
+        {
+          "name": "Update expense - not payer (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 403', function () { pm.response.to.have.status(403); });"] } }],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"description\": \"Hijacked\",\n  \"amount\": 60.00,\n  \"shares\": [\n    { \"debtorUsername\": \"{{user_a_username}}\", \"shareAmount\": 60.00 }\n  ]\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/expenses/{{expense_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expenses", "{{expense_id}}"] }
+          }
+        },
+        {
+          "name": "Delete expense - not found (404)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 404', function () { pm.response.to.have.status(404); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expenses/999999999", "host": ["{{base_url}}"], "path": ["teacolito", "expenses", "999999999"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settlements",
+      "item": [
+        {
+          "name": "Create settlement - without token (401)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 401', function () { pm.response.to.have.status(401); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"toUsername\": \"{{user_a_username}}\",\n  \"amount\": 10.00\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/settlements", "host": ["{{base_url}}"], "path": ["teacolito", "settlements"] }
+          }
+        },
+        {
+          "name": "Create settlement - invalid amount (400)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 400', function () { pm.response.to.have.status(400); });"] } }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"toUsername\": \"{{user_a_username}}\",\n  \"amount\": 0\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/settlements", "host": ["{{base_url}}"], "path": ["teacolito", "settlements"] }
+          }
+        },
+        {
+          "name": "Create settlement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "var json = pm.response.json();",
+                  "pm.environment.set('settlement_id', json.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"groupId\": {{group_id}},\n  \"toUsername\": \"{{user_a_username}}\",\n  \"amount\": 15.00\n}" },
+            "url": { "raw": "{{base_url}}/teacolito/settlements", "host": ["{{base_url}}"], "path": ["teacolito", "settlements"] }
+          }
+        },
+        {
+          "name": "Get settlements by group",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('At least one settlement', function () { pm.expect(pm.response.json().length).to.be.above(0); });"] } }],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}/settlements", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}", "settlements"] }
+          }
+        },
+        {
+          "name": "Delete settlement - not owner (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 403', function () { pm.response.to.have.status(403); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/settlements/{{settlement_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "settlements", "{{settlement_id}}"] }
+          }
+        },
+        {
+          "name": "Delete settlement",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 204', function () { pm.response.to.have.status(204); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_b}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/settlements/{{settlement_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "settlements", "{{settlement_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cleanup & group lifecycle",
+      "item": [
+        {
+          "name": "Delete group - blocked while balance pending (409)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 409', function () { pm.response.to.have.status(409); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        },
+        {
+          "name": "Delete expense (settles the balance)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 204', function () { pm.response.to.have.status(204); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expenses/{{expense_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expenses", "{{expense_id}}"] }
+          }
+        },
+        {
+          "name": "Close group",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Group is closed', function () { pm.expect(pm.response.json().closed).to.eql(true); });"] } }],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}/close", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}", "close"] }
+          }
+        },
+        {
+          "name": "Delete group - not creator (403)",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 403', function () { pm.response.to.have.status(403); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_b}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        },
+        {
+          "name": "Delete group",
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 204', function () { pm.response.to.have.status(204); });"] } }],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
+            "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
+          }
+        }
+      ]
+    }
+  ]
+}

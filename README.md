@@ -42,3 +42,12 @@
 - **Huecos conocidos y por qué**:
   - `clients/UserClient` — solo se cubre la rama de fallback (falla la llamada → usa el username crudo). La rama de éxito (`users` responde bien) no se puede probar hasta que el microservicio `users` exista de verdad.
   - `config/SecurityConfig.jwtDecoder()` — el bean real (que llama a Cognito por red al arrancar) está anotado `@Profile("!test")` a propósito y nunca se instancia en los tests; solo se prueba la lógica propia (`CognitoClientIdValidator`), no la llamada de red en sí.
+
+## Colección de Postman (teacolito)
+
+- Archivos: [`teacolito/teacolito.postman_collection.json`](teacolito/teacolito.postman_collection.json) + [`teacolito/teacolito.postman_environment.json`](teacolito/teacolito.postman_environment.json), versionados en el repo.
+- `base_url` apunta a nginx (`http://localhost:9090`), no a un puerto interno — todas las rutas usan el prefijo `/teacolito/`.
+- 4 carpetas en orden de ejecución: **Auth** (obtiene el Access Token real de Cognito vía `InitiateAuth` con `USER_PASSWORD_AUTH` y lo guarda solo en variables de entorno, nunca hardcodeado) → **Expense Groups** → **Expenses** → **Settlements** → **Cleanup & group lifecycle**. 36 requests, cada uno con `pm.test`.
+- Cubre join por código, invitación privada, `ShareMismatchException`, bloqueo de `DELETE` con balance pendiente, y casos explícitos de 400/404/409/401/403 — incluyendo 403 real usando dos usuarios de Cognito distintos (`user_a`/`user_b`).
+- **Prerrequisito para correrla completa**: dos usuarios reales del User Pool con `ALLOW_USER_PASSWORD_AUTH` habilitado en el App Client `teacolito`, configurados en el environment (`user_a_username`/`user_a_password`/`user_b_username`/`user_b_password`) — no vienen incluidos por seguridad.
+- **Validado con Newman** contra el stack real (`docker compose up`): las 36 requests llegan correctamente (0 fallas de red/ruteo); sin credenciales reales de Cognito, `Auth` devuelve 400 y todo lo que depende del token cae en cascada a 401 — es exactamente el comportamiento esperado sin login válido. Con usuarios de prueba reales debería correr en verde de punta a punta.
