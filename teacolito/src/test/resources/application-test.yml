@@ -1,0 +1,13 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://example.invalid/test-issuer
+
+cognito:
+  app-client-id: test-client-id
+
+users:
+  service:
+    url: http://localhost:0

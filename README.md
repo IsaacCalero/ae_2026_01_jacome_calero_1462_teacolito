@@ -27,3 +27,15 @@
 - **Tipo de token validado**: Access Token (el `client_id` viaja en el claim `client_id`, no en `aud` — Cognito no pone el App Client en `aud` para Access Tokens, por eso `SecurityConfig.kt` valida `client_id` con un `OAuth2TokenValidator` propio en vez del validador de audience por defecto de Spring).
 - **Grupos / roles**: no hay grupos de Cognito creados. El dominio no tiene roles globales — la autorización es contextual por recurso (ej. solo el creador de un grupo puede cerrarlo o eliminarlo, solo el dueño de un gasto puede editarlo), validada a mano en los services, no vía `@PreAuthorize` por rol. Decisión confirmada con el profesor.
 - Los valores reales viven en `.env` (no versionado); `.env.example` documenta las claves sin secretos.
+
+## Tests y cobertura (teacolito)
+
+- **Unitarios** (JUnit 5 + Mockito): los 3 services (`ExpenseGroupService`, `ExpenseService`, `SettlementService`) y `CognitoClientIdValidator`.
+- **Integración** (`@SpringBootTest` + `MockMvc` + Testcontainers Postgres): los 3 controllers, cubriendo caminos felices, errores de negocio (400/404/409) y autorización (401 sin token, 403 por no ser miembro/dueño del recurso). Incluye join por código, invitación privada, bloqueo de `DELETE` con balance pendiente, `ShareMismatchException`, y netting de extremo a extremo.
+- **Excluido del objetivo de cobertura** (sin lógica propia que probar):
+  - `TeacolitoApplication.kt` — clase de arranque, sin comportamiento.
+  - `dto/*` — solo `data class` sin lógica.
+  - `entities/*` — entidades JPA sin comportamiento más allá de sus campos.
+  - `exceptions/*Exception.kt` — clases de una línea que solo extienden `RuntimeException`.
+  - `SecurityConfig.kt` — configuración declarativa de Spring Security (DSL de beans), sin lógica propia; la única lógica real (`CognitoClientIdValidator`) sí tiene test unitario.
+- Se corre con `./gradlew test` dentro de `teacolito/`. La cobertura exacta se mide con el coverage del IDE (IntelliJ *Run with Coverage*), como pide la rúbrica — falta correrlo y adjuntar la captura.

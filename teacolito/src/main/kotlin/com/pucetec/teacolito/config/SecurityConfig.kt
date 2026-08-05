@@ -3,6 +3,7 @@ package com.pucetec.teacolito.config
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -17,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain
 class SecurityConfig {
 
     @Bean
+    @Profile("!test")
     fun jwtDecoder(
         @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") issuerUri: String,
         @Value("\${cognito.app-client-id}") appClientId: String
