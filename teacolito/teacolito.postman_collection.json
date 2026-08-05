@@ -16,9 +16,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const CryptoJS = require('crypto-js');",
-                  "const message = pm.environment.get('user_a_username') + pm.environment.get('cognito_client_id');",
-                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "var CryptoJS = require('crypto-js');",
+                  "var message = pm.environment.get('user_a_username') + pm.environment.get('cognito_client_id');",
+                  "var hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
                   "pm.environment.set('secret_hash_a', CryptoJS.enc.Base64.stringify(hash));"
                 ]
               }
@@ -69,9 +69,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const CryptoJS = require('crypto-js');",
-                  "const message = pm.environment.get('user_a_username') + pm.environment.get('cognito_client_id');",
-                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "var CryptoJS = require('crypto-js');",
+                  "var message = pm.environment.get('user_a_username') + pm.environment.get('cognito_client_id');",
+                  "var hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
                   "pm.environment.set('secret_hash_a', CryptoJS.enc.Base64.stringify(hash));"
                 ]
               }
@@ -116,9 +116,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const CryptoJS = require('crypto-js');",
-                  "const message = pm.environment.get('user_b_username') + pm.environment.get('cognito_client_id');",
-                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "var CryptoJS = require('crypto-js');",
+                  "var message = pm.environment.get('user_b_username') + pm.environment.get('cognito_client_id');",
+                  "var hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
                   "pm.environment.set('secret_hash_b', CryptoJS.enc.Base64.stringify(hash));"
                 ]
               }
@@ -169,9 +169,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const CryptoJS = require('crypto-js');",
-                  "const message = pm.environment.get('user_b_username') + pm.environment.get('cognito_client_id');",
-                  "const hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
+                  "var CryptoJS = require('crypto-js');",
+                  "var message = pm.environment.get('user_b_username') + pm.environment.get('cognito_client_id');",
+                  "var hash = CryptoJS.HmacSHA256(message, pm.environment.get('cognito_client_secret'));",
                   "pm.environment.set('secret_hash_b', CryptoJS.enc.Base64.stringify(hash));"
                 ]
               }
@@ -206,6 +206,66 @@
               "path": [""]
             },
             "description": "Correr UNA SOLA VEZ por usuario, solo si 'Login User B' capturo un ChallengeName NEW_PASSWORD_REQUIRED en vez de un token. Deja la password ya usada como permanente; los logins siguientes no necesitan este paso."
+          }
+        },
+        {
+          "name": "Create Profile - User A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "    pm.test('displayName saved', function () { pm.expect(pm.response.json().displayName).to.eql(pm.environment.get('user_a_display_name')); });",
+                  "} else if (pm.response.code === 409) {",
+                  "    console.warn('User A already has a profile in the users microservice — nothing to do, this is expected on repeat runs.');",
+                  "} else {",
+                  "    throw new Error('Unexpected response creating profile for User A: ' + pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"displayName\": \"{{user_a_display_name}}\"\n}" },
+            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
+          }
+        },
+        {
+          "name": "Create Profile - User B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "    pm.test('displayName saved', function () { pm.expect(pm.response.json().displayName).to.eql(pm.environment.get('user_b_display_name')); });",
+                  "} else if (pm.response.code === 409) {",
+                  "    console.warn('User B already has a profile in the users microservice — nothing to do, this is expected on repeat runs.');",
+                  "} else {",
+                  "    throw new Error('Unexpected response creating profile for User B: ' + pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"displayName\": \"{{user_b_display_name}}\"\n}" },
+            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
           }
         }
       ]

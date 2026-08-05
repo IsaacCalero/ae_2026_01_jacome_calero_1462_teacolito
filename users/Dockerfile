@@ -1,7 +1,3 @@
-# Placeholder — el microservicio `users` todavía no tiene código fuente.
-# Mismo patrón multi-stage que teacolito/Dockerfile (Kotlin + Spring Boot + Gradle).
-# Reemplazar cuando exista el código real del microservicio.
-
 # ---------- Stage 1: Build ----------
 FROM eclipse-temurin:21-jdk AS build
 
