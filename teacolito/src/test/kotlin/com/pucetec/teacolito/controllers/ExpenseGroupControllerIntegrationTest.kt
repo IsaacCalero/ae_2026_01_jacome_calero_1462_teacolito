@@ -10,7 +10,9 @@ import org.springframework.http.MediaType
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
@@ -195,5 +197,144 @@ class ExpenseGroupControllerIntegrationTest : IntegrationTestBase() {
             .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0].toUsername").value("alice"))
             .andExpect(jsonPath("$[1].toUsername").value("alice"))
+    }
+
+    @Test
+    fun `getGroup for an unknown id returns 404`() {
+        mockMvc.perform(get("/expense-groups/999999").with(asUser("alice")))
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `updateGroup by the creator renames the group`() {
+        val group = createGroup("Old name", "alice")
+        val groupId = (group["id"] as Number).toLong()
+
+        mockMvc.perform(
+            put("/expense-groups/$groupId")
+                .with(asUser("alice"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ExpenseGroupRequest("New name")))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.name").value("New name"))
+    }
+
+    @Test
+    fun `updateGroup by a non-creator returns 403`() {
+        val group = createGroup("Owned by alice", "alice")
+        val groupId = (group["id"] as Number).toLong()
+
+        mockMvc.perform(
+            put("/expense-groups/$groupId")
+                .with(asUser("bob"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ExpenseGroupRequest("Hijacked name")))
+        ).andExpect(status().isForbidden)
+    }
+
+    @Test
+    fun `createGroup with a name the creator already used returns 409`() {
+        createGroup("Repeated name", "alice")
+
+        mockMvc.perform(
+            post("/expense-groups")
+                .with(asUser("alice"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ExpenseGroupRequest("Repeated name")))
+        ).andExpect(status().isConflict)
+    }
+
+    @Test
+    fun `createGroup with a blank name returns 400`() {
+        mockMvc.perform(
+            post("/expense-groups")
+                .with(asUser("alice"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ExpenseGroupRequest("   ")))
+        ).andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `closeGroup by the creator closes it`() {
+        val group = createGroup("To be closed", "alice")
+        val groupId = (group["id"] as Number).toLong()
+
+        mockMvc.perform(patch("/expense-groups/$groupId/close").with(asUser("alice")))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.closed").value(true))
+    }
+
+    @Test
+    fun `getMembers lists everyone who joined`() {
+        val group = createGroup("Members list", "alice")
+        val groupId = (group["id"] as Number).toLong()
+        val inviteCode = group["inviteCode"] as String
+
+        mockMvc.perform(
+            post("/groups/join")
+                .with(asUser("bob"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(JoinGroupRequest(inviteCode)))
+        )
+
+        mockMvc.perform(get("/expense-groups/$groupId/members").with(asUser("alice")))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(2))
+    }
+
+    @Test
+    fun `getBalances reflects who paid and who owes`() {
+        val group = createGroup("Balances group", "alice")
+        val groupId = (group["id"] as Number).toLong()
+        val inviteCode = group["inviteCode"] as String
+
+        mockMvc.perform(
+            post("/groups/join")
+                .with(asUser("bob"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(JoinGroupRequest(inviteCode)))
+        )
+
+        mockMvc.perform(
+            post("/expenses")
+                .with(asUser("alice"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        ExpenseRequest(
+                            groupId = groupId,
+                            description = "Snacks",
+                            amount = BigDecimal("20.00"),
+                            shares = listOf(
+                                ExpenseShareRequest("alice", BigDecimal("10.00")),
+                                ExpenseShareRequest("bob", BigDecimal("10.00"))
+                            )
+                        )
+                    )
+                )
+        ).andExpect(status().isCreated)
+
+        mockMvc.perform(get("/expense-groups/$groupId/balances").with(asUser("alice")))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.length()").value(2))
+    }
+
+    @Test
+    fun `deleteGroup by the creator with no balances succeeds`() {
+        val group = createGroup("Empty group", "alice")
+        val groupId = (group["id"] as Number).toLong()
+
+        mockMvc.perform(delete("/expense-groups/$groupId").with(asUser("alice")))
+            .andExpect(status().isNoContent)
+    }
+
+    @Test
+    fun `deleteGroup by a non-creator returns 403`() {
+        val group = createGroup("Not yours", "alice")
+        val groupId = (group["id"] as Number).toLong()
+
+        mockMvc.perform(delete("/expense-groups/$groupId").with(asUser("bob")))
+            .andExpect(status().isForbidden)
     }
 }
