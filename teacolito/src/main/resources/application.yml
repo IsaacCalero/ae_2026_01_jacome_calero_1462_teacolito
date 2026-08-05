@@ -30,6 +30,9 @@ spring:
         jwt:
           issuer-uri: ${COGNITO_ISSUER_URI}
 
+cognito:
+  app-client-id: ${COGNITO_APP_CLIENT_ID}
+
 users:
   service:
     url: ${USERS_SERVICE_URL:http://localhost:8081}

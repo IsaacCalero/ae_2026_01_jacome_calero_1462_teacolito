@@ -5,7 +5,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN sh ./gradlew bootJar --no-daemon
+RUN --mount=type=cache,target=/root/.gradle \
+    sh ./gradlew bootJar --no-daemon
 
 # ---------- Stage 2: Runtime ----------
 FROM eclipse-temurin:21-jre AS runtime
