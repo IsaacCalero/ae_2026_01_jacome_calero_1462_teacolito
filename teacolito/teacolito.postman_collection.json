@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Teacolito API",
-    "description": "Coleccion end-to-end del backend Teacolito, a traves del API Gateway (nginx). Corre las carpetas en orden de arriba hacia abajo con el Collection Runner. Requiere dos usuarios de prueba reales de Cognito configurados en el environment (user_a_username/password, user_b_username/password) con ALLOW_USER_PASSWORD_AUTH habilitado en el App Client.",
+    "description": "Coleccion end-to-end del backend Teacolito, a traves del API Gateway (nginx). Corre las carpetas en orden de arriba hacia abajo con el Collection Runner. Requiere dos usuarios de prueba reales de Cognito configurados en el environment (user_a_username/password, user_b_username/password) con ALLOW_USER_PASSWORD_AUTH habilitado en el App Client. El nombre del grupo se genera con timestamp, asi que se puede correr varias veces sin choques de nombre duplicado entre corridas. MODO SEMBRAR DATOS (para dejar la base poblada antes de la evaluacion): en el Collection Runner, deselecciona la carpeta 'Cleanup & group lifecycle' y corre el resto 2-3 veces -- asi quedan varios grupos/gastos/pagos reales sin borrarse. MODO CICLO COMPLETO (para demostrar en la defensa): corre TODAS las carpetas, incluida Cleanup, que borra lo que creo esa corrida (demuestra el bloqueo de DELETE por balance pendiente y el borrado exitoso una vez saldado).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -108,6 +108,15 @@
           "name": "Create group",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('group_name', 'Postman trip ' + Date.now());"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -127,7 +136,7 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman trip\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{group_name}}\"\n}" },
             "url": { "raw": "{{base_url}}/teacolito/expense-groups", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups"] }
           }
         },
@@ -140,13 +149,13 @@
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman trip\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{group_name}}\"\n}" },
             "url": { "raw": "{{base_url}}/teacolito/expense-groups", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups"] }
           }
         },
         {
           "name": "Get group by id",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Name matches', function () { pm.expect(pm.response.json().name).to.eql('Postman trip'); });"] } }],
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Name matches', function () { pm.expect(pm.response.json().name).to.eql(pm.environment.get('group_name')); });"] } }],
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{access_token_a}}" }],
@@ -182,7 +191,7 @@
         },
         {
           "name": "Get invitation - with token",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Group name visible', function () { pm.expect(pm.response.json().groupName).to.eql('Postman trip'); });"] } }],
+          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Group name visible', function () { pm.expect(pm.response.json().groupName).to.eql(pm.environment.get('group_name')); });"] } }],
           "request": {
             "method": "GET",
             "header": [{ "key": "Authorization", "value": "Bearer {{access_token_b}}" }],
@@ -239,14 +248,23 @@
         },
         {
           "name": "Update group",
-          "event": [{ "listen": "test", "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Name updated', function () { pm.expect(pm.response.json().name).to.eql('Postman trip (updated)'); });"] } }],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "type": "text/javascript", "exec": ["pm.environment.set('group_name_updated', pm.environment.get('group_name') + ' (updated)');"] }
+            },
+            {
+              "listen": "test",
+              "script": { "type": "text/javascript", "exec": ["pm.test('Status 200', function () { pm.response.to.have.status(200); });", "pm.test('Name updated', function () { pm.expect(pm.response.json().name).to.eql(pm.environment.get('group_name_updated')); });"] }
+            }
+          ],
           "request": {
             "method": "PUT",
             "header": [
               { "key": "Content-Type", "value": "application/json" },
               { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
             ],
-            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Postman trip (updated)\"\n}" },
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"{{group_name_updated}}\"\n}" },
             "url": { "raw": "{{base_url}}/teacolito/expense-groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["teacolito", "expense-groups", "{{group_id}}"] }
           }
         },
