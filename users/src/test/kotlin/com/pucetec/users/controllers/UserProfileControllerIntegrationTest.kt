@@ -17,7 +17,7 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `createProfile without a token returns 401`() {
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("alice")))
         ).andExpect(status().isUnauthorized)
@@ -26,7 +26,7 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `createProfile with a blank display name returns 400`() {
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-blank"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("   ")))
@@ -36,7 +36,7 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `createProfile creates the profile and returns 201`() {
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-create"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("alice-create")))
@@ -49,14 +49,14 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `createProfile for a sub that already has a profile returns 409`() {
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-dup-owner"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("first-name")))
         ).andExpect(status().isCreated)
 
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-dup-owner"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("second-name")))
@@ -66,14 +66,14 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
     @Test
     fun `createProfile with a display name already taken by someone else returns 409`() {
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-original"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("taken-name")))
         ).andExpect(status().isCreated)
 
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-someone-else"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("taken-name")))
@@ -82,20 +82,20 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `getProfile for an unknown sub returns 404`() {
-        mockMvc.perform(get("/users/does-not-exist").with(asUser("someone")))
+        mockMvc.perform(get("/does-not-exist").with(asUser("someone")))
             .andExpect(status().isNotFound)
     }
 
     @Test
     fun `getProfile resolves the display name for an existing sub`() {
         mockMvc.perform(
-            post("/users")
+            post("/")
                 .with(asUser("sub-lookup"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(CreateUserProfileRequest("lookup-name")))
         ).andExpect(status().isCreated)
 
-        mockMvc.perform(get("/users/sub-lookup").with(asUser("anyone")))
+        mockMvc.perform(get("/sub-lookup").with(asUser("anyone")))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.username").value("sub-lookup"))
             .andExpect(jsonPath("$.displayName").value("lookup-name"))
@@ -103,7 +103,7 @@ class UserProfileControllerIntegrationTest : IntegrationTestBase() {
 
     @Test
     fun `getProfile without a token returns 401`() {
-        mockMvc.perform(get("/users/sub-lookup"))
+        mockMvc.perform(get("/sub-lookup"))
             .andExpect(status().isUnauthorized)
     }
 }

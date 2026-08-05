@@ -21,7 +21,7 @@ class UserClient(
     fun resolveDisplayName(username: String, bearerToken: String): String {
         return try {
             restClient.get()
-                .uri("$usersServiceUrl/users/{username}", username)
+                .uri("$usersServiceUrl/{username}", username)
                 .header("Authorization", "Bearer $bearerToken")
                 .retrieve()
                 .body(UserProfileResponse::class.java)

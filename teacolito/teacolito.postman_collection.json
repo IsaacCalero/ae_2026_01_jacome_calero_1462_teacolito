@@ -235,7 +235,7 @@
               { "key": "Authorization", "value": "Bearer {{access_token_a}}" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"displayName\": \"{{user_a_display_name}}\"\n}" },
-            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
+            "url": { "raw": "{{base_url}}/users/", "host": ["{{base_url}}"], "path": ["users", ""] }
           }
         },
         {
@@ -265,7 +265,7 @@
               { "key": "Authorization", "value": "Bearer {{access_token_b}}" }
             ],
             "body": { "mode": "raw", "raw": "{\n  \"displayName\": \"{{user_b_display_name}}\"\n}" },
-            "url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
+            "url": { "raw": "{{base_url}}/users/", "host": ["{{base_url}}"], "path": ["users", ""] }
           }
         }
       ]

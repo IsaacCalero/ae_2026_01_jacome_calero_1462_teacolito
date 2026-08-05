@@ -18,7 +18,7 @@ class UserProfileController(
     private val userProfileService: UserProfileService
 ) {
 
-    @PostMapping("/users")
+    @PostMapping
     fun createProfile(
         @RequestBody request: CreateUserProfileRequest,
         @AuthenticationPrincipal jwt: Jwt
@@ -27,7 +27,7 @@ class UserProfileController(
         return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
-    @GetMapping("/users/{username}")
+    @GetMapping("/{username}")
     fun getProfile(@PathVariable username: String): ResponseEntity<UserProfileResponse> {
         val response = userProfileService.getProfile(username)
         return ResponseEntity.ok(response)
