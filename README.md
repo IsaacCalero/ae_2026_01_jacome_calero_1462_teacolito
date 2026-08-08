@@ -162,9 +162,3 @@ Para ser honestos ante el profesor si se pregunta qué falta:
 - **Cobertura de tests**: 97% en teacolito (no 100%), con los huecos documentados arriba.
 - Sin colección Postman separada para `users` — sus endpoints se ejercitan indirectamente dentro de la carpeta "Auth" de la colección de teacolito.
 
-## Antes de la entrega (pendiente de acción manual, no de código)
-
-- [ ] Adjuntar aquí (o en el aula virtual) la captura del reporte de cobertura del IDE para `teacolito` y `users`.
-- [ ] Confirmar que el repositorio de GitHub es accesible para el docente (público, o privado con el docente agregado como colaborador).
-- [ ] Ambos integrantes deben subir la **URL del repositorio** al aula virtual (no un `.zip`).
-- [ ] Poblar ambas bases con datos de prueba antes de la evaluación (usuarios de Cognito ya creados, según lo visto en Postman).
